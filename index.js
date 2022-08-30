@@ -6,28 +6,23 @@ const schema = Joi.object().keys({
   name: Joi.string().min(1).required(),
 });
 
-const login = [
-  {
-    name: 'jorge',
-  },
-  {
-    name: 'lucas',
-  },
-  {
-    name: 'farlei',
-  },
-  {
-    name: 'carine',
-  },
-];
+const login = [];
+
+const messageAPI = [];
 
 const app = express();
 app.use(express.json());
 app.use(cors());
 
 app.post('/participants', (req, res) => {
+  const data = new Date();
+  const hora = data.getHours();
+  const min = data.getMinutes();
+  const seg = data.getSeconds();
+
   const result = schema.validate(req.body, Joi.messages);
   const ok = true;
+
   if (result.error) {
     res.send(result.error.details);
     ok = false;
@@ -39,9 +34,18 @@ app.post('/participants', (req, res) => {
       }
     }
   }
+
   if (ok) {
+    messageAPI.push({
+      from: req.body.name,
+      to: 'Todos',
+      text: 'entra na sala...',
+      type: 'status',
+      time: hora + ':' + min + ':' + seg,
+    });
+
     login.push({...req.body, lastStatus: Date.now()});
-    res.send(login);
+    res.send(messageAPI);
   }
 });
 
