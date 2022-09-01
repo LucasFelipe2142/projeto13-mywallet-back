@@ -7,6 +7,8 @@ const mongoClient = new MongoClient('mongodb://localhost:27017');
 
 let db;
 
+const app = newFunction();
+
 mongoClient.connect().then(() => {
 	db = mongoClient.db('chatUol');
 });
@@ -21,10 +23,6 @@ const schemaMessage = Joi.object().keys({
   type: Joi.string().valid('message', 'private_message'),
 
 });
-
-const app = express();
-app.use(express.json());
-app.use(cors());
 
 app.post('/participants', (req, res) => {
   const data = new Date();
@@ -93,7 +91,30 @@ app.post('/messages', (req, res) => {
 
 app.get('/messages', (req, res) => {
   const numMessages = req.query.limit === undefined ? 2 : req.query.limit;
-  db.collection("messageBD").find({$or:[{to: req.headers.user},{type: 'message'}]}).toArray().then(user => res.send(user.slice(-numMessages).reverse()));
+  db.collection("messageBD").find({$or:[{to: req.headers.user},{type: 'message'},{from: req.headers.user}]}).toArray().then(user => res.send(user.slice(-numMessages).reverse()));
+});
+
+app.post('/status', (req, res) => {
+
+    db.collection("logarBD").findOne({
+    name: req.headers.user
+  }).then(user => {
+     if(user === null) res.sendStatus(404);
+     else{
+      db.collection("logarBD").update({name: req.headers.user},{$set:{lastStatus: Date.now()}})
+      res.sendStatus(200);
+     }
+     
+  });
+  
 });
 
 app.listen(5000);
+
+function newFunction() {
+  const app = express();
+  app.use(express.json());
+  app.use(cors());
+  return app;
+}
+
