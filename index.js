@@ -94,7 +94,7 @@ app.post('/messages', (req, res) => {
 
 app.get('/messages', (req, res) => {
   const numMessages = req.query.limit === undefined ? 2 : req.query.limit;
-  db.collection("messageBD").find({$or:[{to: req.headers.user},{type: 'message'},{type: 'status'},{from: req.headers.user}]}).toArray().then(user => res.send(user.slice(-numMessages).reverse()));
+  db.collection("messageBD").find({$or:[{to: req.headers.user},{type: 'message'},{type: 'status'},{from: req.headers.user}]}).toArray().then(user => res.send(user.slice(-numMessages)));
 });
 
 app.post('/status', (req, res) => {
