@@ -74,7 +74,7 @@ app.post('/messages', (req, res) => {
   if (result.error) {
     res.sendStatus(422);
   } else{ 
-      db.collection("loginBD").findOne({
+      db.collection("logarBD").findOne({
         name: req.headers.user
       }).then(user => {
         if(user === null) res.sendStatus(422);
