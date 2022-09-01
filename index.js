@@ -62,12 +62,11 @@ app.get('/participants', (req, res) => {
   db.collection("logarBD").find().toArray().then(user => res.send(user))
 });
 
-app.get('/messages', (req, res) => {
+app.post('/messages', (req, res) => {
   const data = new Date();
   const hora = data.getHours();
   const min = data.getMinutes();
   const seg = data.getSeconds();
-  let aux = false;
 
   const result = schemaMessage.validate(req.body, Joi.messages);
 
@@ -90,6 +89,11 @@ app.get('/messages', (req, res) => {
         }
       });
     }
+});
+
+app.get('/messages', (req, res) => {
+  const numMessages = req.query.limit === undefined ? 2 : req.query.limit;
+  db.collection("messageBD").find({to: req.headers.user}).toArray().then(user => res.send(user.slice(-numMessages).reverse()));
 });
 
 app.listen(5000);
