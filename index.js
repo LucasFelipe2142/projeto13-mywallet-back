@@ -2,8 +2,10 @@ import express from 'express';
 import cors from 'cors';
 import Joi from 'joi';
 import { MongoClient } from 'mongodb';
+import dotenv from "dotenv";
+dotenv.config();
 
-const mongoClient = new MongoClient('mongodb://localhost:27017');
+const mongoClient = new MongoClient(process.env.URI);
 
 let db;
 
@@ -42,12 +44,13 @@ app.post('/participants', (req, res) => {
      if(user !== null) res.sendStatus(409);
      else{
         db.collection("messageBD").insertOne({
-        from: req.body.name,
-        to: 'Todos',
-        text: 'entra na sala...',
-        type: 'status',
-        time: hora + ':' + min + ':' + seg,
-      });
+          from: req.body.name,
+          to: 'Todos',
+          text: 'entra na sala...',
+          type: 'status',
+          time: hora + ':' + min + ':' + seg,
+        });
+      
       db.collection("logarBD").insertOne({...req.body, lastStatus: Date.now()});
       res.sendStatus(201);
      }
@@ -91,12 +94,12 @@ app.post('/messages', (req, res) => {
 
 app.get('/messages', (req, res) => {
   const numMessages = req.query.limit === undefined ? 2 : req.query.limit;
-  db.collection("messageBD").find({$or:[{to: req.headers.user},{type: 'message'},{from: req.headers.user}]}).toArray().then(user => res.send(user.slice(-numMessages).reverse()));
+  db.collection("messageBD").find({$or:[{to: req.headers.user},{type: 'message'},{type: 'status'},{from: req.headers.user}]}).toArray().then(user => res.send(user.slice(-numMessages).reverse()));
 });
 
 app.post('/status', (req, res) => {
 
-    db.collection("logarBD").findOne({
+  db.collection("logarBD").findOne({
     name: req.headers.user
   }).then(user => {
      if(user === null) res.sendStatus(404);
@@ -108,6 +111,29 @@ app.post('/status', (req, res) => {
   });
   
 });
+
+setInterval(()=>{
+  db.collection("logarBD").find().toArray().then(list => {
+     if(list !== null){
+      for(let i=0; i<list.length; i++){
+        if(Date.now() - list[i].lastStatus > 10000){
+          const data = new Date();
+          const hora = data.getHours();
+          const min = data.getMinutes();
+          const seg = data.getSeconds();
+          db.collection("messageBD").insertOne({
+            from: list[i].name,
+            to: 'Todos',
+            text: 'sai da sala...',
+            type: 'status',
+            time: hora + ':' + min + ':' + seg,
+          });
+          db.collection("logarBD").remove({name:list[i].name});
+        }
+      }
+     }    
+  });
+}, 15000);
 
 app.listen(5000);
 
