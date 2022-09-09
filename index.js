@@ -84,7 +84,7 @@ app.post("/login", async (req, res) => {
           })
           .then(() => {
             delete user.password;
-            res.send(token);
+            res.send({ token: token, name: user.name });
           });
       } else {
         res.send(404);
@@ -95,6 +95,9 @@ app.post("/login", async (req, res) => {
 app.post("/add_or_remove_value", async (req, res) => {
   const token = req.headers.authorization?.replace("Bearer ", "");
   const result = schemaAddorRemove.validate(req.body, { abortEarly: true });
+  const now = new Date();
+  const day = now.getDay() < 10 ? `0${now.getDay()}` : now.getDay();
+  const month = now.getMonth() < 10 ? `0${now.getMonth()}` : now.getMonth();
 
   if (result.error) {
     res.sendStatus(404);
@@ -109,17 +112,36 @@ app.post("/add_or_remove_value", async (req, res) => {
           db.collection("valorsBD")
             .insertOne({
               ...req.body,
+              description:
+                req.body.description[0].toUpperCase() +
+                req.body.description.substring(1),
               userId: value.userId,
+              date: `${day}/${month}`,
             })
-            .then((value) => {
-              res.send({
-                ...req.body,
-                userId: value.userId,
-              });
+            .then(() => {
+              res.sendStatus(201);
             });
         }
       });
   }
+});
+
+app.get("/add_or_remove_value", async (req, res) => {
+  const token = req.headers.authorization?.replace("Bearer ", "");
+
+  db.collection("sessionsBD")
+    .findOne({
+      token: token,
+    })
+    .then((value) => {
+      if (value === null) return res.send(404);
+      else {
+        db.collection("valorsBD")
+          .find({ userId: value.userId })
+          .toArray()
+          .then((user) => res.send(user));
+      }
+    });
 });
 
 app.listen(5000);
